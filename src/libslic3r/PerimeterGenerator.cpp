@@ -87,15 +87,16 @@ class DisplacementMap: public noise::module::Module {
 
             auto height = displacement_map->rows;
             double pixel_v = scaled<double>(z) / cfg.point_distance;  // Match v and u scale to fix y to x proportions (Each cfg.point_distance spans 1 pixel on x).
-            double pixel_y = static_cast<double>((static_cast<int>(pixel_v+.5)) % height); // +.5 to round; "Clamp" the texture using the "repeat" method (in graphics terms).
-            pixel_y = height - pixel_y; // Flip it so the bottom pixel (height()-1) is at the first layer(s) (z=~0) of the print.
+            int pixel_y = (int)round(fmod(pixel_v, height)); // "Clamp" the texture using the "repeat" method (in graphics terms).
+            pixel_y %= displacement_map->rows; // round can make it out of bounds
+            pixel_y = height - 1 - pixel_y; // Flip it so the bottom pixel (height()-1) is at the first layer(s) (z=~0) of the print.
 
             // determine the face:
             auto flat_point = Point(scale_(x), scale_(y));
             double pixel_u = cubemap_side_u(object->bounding_box(), flat_point, normal_radians) / cfg.point_distance;
-            double pixel_x = (double)((int)(pixel_u+.5) % displacement_map->cols); // +.5 to round; "Clamp" the texture using the "repeat" method (in graphics terms).
-
-            int pixel_val = displacement_map->get((int)(pixel_y+.5), (int)(pixel_x+.5)); // caution: signature is get(y, x)
+            int pixel_x = (int)round(fmod(pixel_u, displacement_map->cols)); // "Clamp" the texture using the "repeat" method (in graphics terms).
+            pixel_x %= displacement_map->cols; // round can make it out of bounds
+            int pixel_val = displacement_map->get(pixel_y, pixel_x); // caution: signature is get(y, x)
             return ((255 - pixel_val) / (255.0/2.0)) - 1.0; // negate value and normalize to -1.0 to 1.0
         }
         // we need the to know which side of object this line segment is on
