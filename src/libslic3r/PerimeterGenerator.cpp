@@ -116,36 +116,28 @@ class DisplacementMap: public noise::module::Module {
         @param normal_radians The normal of the flat_point expressed in radians from the top view (X-Y plane).
         */
         static double cubemap_side_u(const BoundingBox& bounding_box, const Point& flat_point, const double normal_radians) {
-            double angle_deg = normal_radians * 180. / M_PI;
-            // -180 < angle_deg <= 180.
-            // int side = 0;
-            double previous_sides_total_length = 0.0;
-            double relative_offset;
-            if (angle_deg > 135. || angle_deg <= -135.) { // left (side 0)
-                relative_offset = bounding_box.size().y() - (flat_point.y() - bounding_box.min.y());
-                // ^ inverse since the left side *of* the left side is at the back, which has a larger y value than the front.
-            } else if (angle_deg < -45.) { // front (2nd side in cube mapping)
-                // side = 1;
-                previous_sides_total_length = bounding_box.size().y(); // left's length is its y size.
-                relative_offset = flat_point.x() - bounding_box.min.x();
+            double bbox_width = bounding_box.size().x();
+            double bbox_height = bounding_box.size().y();
+
+            double x = flat_point.x() - bounding_box.min.x();
+            double y = flat_point.y() - bounding_box.min.y();
+
+            // Compute the distance along the perimeter based on the angle
+            double distance;
+            if (normal_radians >= -M_PI_4 && normal_radians < M_PI_4) {
+                // Right face (positive x-direction)
+                distance = y;
+            } else if (normal_radians >= M_PI_4 && normal_radians < 3 * M_PI_4) {
+                // Back face (positive y-direction)
+                distance = bbox_height + x;
+            } else if (normal_radians >= -3 * M_PI_4 && normal_radians < -M_PI_4) {
+                // Front face (negative y-direction)
+                distance = bbox_height + bbox_width + bbox_width - x;
+            } else {
+                // Left face (negative x-direction)
+                distance = bbox_height + bbox_width + bbox_width + bbox_height - y;
             }
-            else if (angle_deg <= 45.) { // right
-                // side = 2;
-                previous_sides_total_length =
-                    bounding_box.size().y() // left's length is its y size.
-                    + bounding_box.size().x() // front's length is its x size (width).
-                ;
-                relative_offset = flat_point.y() - bounding_box.min.y();
-            } else { // (angle_deg > 45. && angle_deg <= 135) { // back
-                // side = 3;
-                previous_sides_total_length =
-                    bounding_box.size().y() * 2. // length of left + right (same, so * 2)
-                    + bounding_box.size().x() // front's length is its x size (width).
-                ;
-                relative_offset = bounding_box.size().x() - (flat_point.x() - bounding_box.min.x());
-                // ^ inverse since the left side *of* the back is the right.
-            }
-            return previous_sides_total_length + relative_offset;
+            return distance;
         }
 
         static int read_png(std::string png_file, png::ImageGreyscale& img)
