@@ -237,10 +237,10 @@ static void fuzzy_polyline(Points& poly, bool closed, coordf_t slice_z, const Fu
 {
     std::unique_ptr<noise::module::Module> noise = get_noise_module(cfg, object);
 
-    const double min_dist_between_points = cfg.point_distance * 3. / 4.; // hardcoded: the point distance may vary between 3/4 and 5/4 the supplied value
+    const bool add_rand_offset = cfg.noise_type == NoiseType::Classic;
+    const double min_dist_between_points = add_rand_offset ? cfg.point_distance * 3. / 4. : cfg.point_distance; // hardcoded: the point distance may vary between 3/4 and 5/4 the supplied value
     const double range_random_point_dist = cfg.point_distance / 2.;
 
-    const bool add_rand_offset = cfg.noise_type == NoiseType::Classic;
     double dist_left_over = 0.0;
     if (add_rand_offset)
         dist_left_over = random_value() * (min_dist_between_points / 2.); // the distance to be traversed on the line before making the first new point
@@ -294,10 +294,10 @@ static void fuzzy_extrusion_line(std::vector<Arachne::ExtrusionJunction>& ext_li
 {
     std::unique_ptr<noise::module::Module> noise = get_noise_module(cfg, object);
 
-    const double min_dist_between_points = cfg.point_distance * 3. / 4.; // hardcoded: the point distance may vary between 3/4 and 5/4 the supplied value
+    const bool add_rand_offset = cfg.noise_type == NoiseType::Classic;
+    const double min_dist_between_points = add_rand_offset ? cfg.point_distance * 3. / 4. : cfg.point_distance; // hardcoded: the point distance may vary between 3/4 and 5/4 the supplied value
     const double range_random_point_dist = cfg.point_distance / 2.;
 
-    const bool add_rand_offset = cfg.noise_type == NoiseType::Classic;
     double dist_left_over = 0.0;
     if (add_rand_offset)
         dist_left_over = random_value() * (min_dist_between_points / 2.); // the distance to be traversed on the line before making the first new point
