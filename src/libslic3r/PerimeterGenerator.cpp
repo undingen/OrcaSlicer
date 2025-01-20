@@ -268,7 +268,7 @@ static void fuzzy_polyline(Points& poly, bool closed, coordf_t slice_z, const Fu
             // DisplacementMap needs to know on which side the bump is facing - calculate the normal
             if (cfg.noise_type == NoiseType::DisplacementMap) {
                 Point normal_point = *p0 + (p0p1 * (p0pa_dist / p0p1_size) + perp(p0p1).cast<double>().normalized()).cast<coord_t>();
-                double normal_radians = atan2(normal_point.y() - pa.y(), normal_point.x() - pa.x());
+                double normal_radians = atan2(pa.y() - normal_point.y(), pa.x() - normal_point.x());
                 reinterpret_cast<DisplacementMap*>(noise.get())->setNormalRadians(normal_radians);
             }
 
