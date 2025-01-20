@@ -260,18 +260,19 @@ static void fuzzy_polyline(Points& poly, bool closed, coordf_t slice_z, const Fu
         Vec2d  p0p1      = (p1 - *p0).cast<double>();
         double p0p1_size = p0p1.norm();
         double p0pa_dist = dist_left_over;
+
+        // DisplacementMap needs to know on which side the bump is facing - calculate the normal
+        if (cfg.noise_type == NoiseType::DisplacementMap) {
+            Vec2d normal = perp(p0p1).normalized();
+            normal = -normal; // negate it because points in wrong direction
+            double normal_radians = atan2(normal.y(), normal.x());
+            reinterpret_cast<DisplacementMap*>(noise.get())->setNormalRadians(normal_radians);
+        }
+
         for (; p0pa_dist < p0p1_size;
             p0pa_dist += min_dist_between_points + (add_rand_offset ? random_value() * range_random_point_dist : 0.0))
         {
             Point pa = *p0 + (p0p1 * (p0pa_dist / p0p1_size)).cast<coord_t>();
-
-            // DisplacementMap needs to know on which side the bump is facing - calculate the normal
-            if (cfg.noise_type == NoiseType::DisplacementMap) {
-                Point normal_point = *p0 + (p0p1 * (p0pa_dist / p0p1_size) + perp(p0p1).cast<double>().normalized()).cast<coord_t>();
-                double normal_radians = atan2(pa.y() - normal_point.y(), pa.x() - normal_point.x());
-                reinterpret_cast<DisplacementMap*>(noise.get())->setNormalRadians(normal_radians);
-            }
-
             double r = noise->GetValue(unscale_(pa.x()), unscale_(pa.y()), slice_z) * cfg.thickness;
             out.emplace_back(pa + (perp(p0p1).cast<double>().normalized() * r).cast<coord_t>());
         }
@@ -315,16 +316,16 @@ static void fuzzy_extrusion_line(std::vector<Arachne::ExtrusionJunction>& ext_li
         Vec2d  p0p1 = (p1.p - p0->p).cast<double>();
         double p0p1_size = p0p1.norm();
         double p0pa_dist = dist_left_over;
+
+        // DisplacementMap needs to know on which side the bump is facing - calculate the normal
+        if (cfg.noise_type == NoiseType::DisplacementMap) {
+            Vec2d normal = perp(p0p1).normalized();
+            double normal_radians = atan2(normal.y(), normal.x());
+            reinterpret_cast<DisplacementMap*>(noise.get())->setNormalRadians(normal_radians);
+        }
+
         for (; p0pa_dist < p0p1_size; p0pa_dist += min_dist_between_points + (add_rand_offset ? random_value() * range_random_point_dist : 0.0)) {
             Point pa = p0->p + (p0p1 * (p0pa_dist / p0p1_size)).cast<coord_t>();
-
-            // DisplacementMap needs to know on which side the bump is facing - calculate the normal
-            if (cfg.noise_type == NoiseType::DisplacementMap) {
-                Point normal_point = p0->p + (p0p1 * (p0pa_dist / p0p1_size) + perp(p0p1).cast<double>().normalized()).cast<coord_t>();
-                double normal_radians = atan2(normal_point.y() - pa.y(), normal_point.x() - pa.x());
-                reinterpret_cast<DisplacementMap*>(noise.get())->setNormalRadians(normal_radians);
-            }
-
             double r = noise->GetValue(unscale_(pa.x()), unscale_(pa.y()), slice_z) * cfg.thickness;
             r = -r; // negate to make it behave the same as the classic wall generator
             out.emplace_back(pa + (perp(p0p1).cast<double>().normalized() * r).cast<coord_t>(), p1.w, p1.perimeter_index);
